@@ -35,3 +35,4 @@ build/
 ### Secretos / credenciales locales ###
 .docs/
 .env
+test-users.sh
