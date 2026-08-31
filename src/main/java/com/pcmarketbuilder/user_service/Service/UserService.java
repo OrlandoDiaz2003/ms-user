@@ -1,6 +1,7 @@
 package com.pcmarketbuilder.user_service.Service;
 
 import com.pcmarketbuilder.user_service.Auth.AuthContext;
+import com.pcmarketbuilder.user_service.Dto.UpdateProfileRequest;
 import com.pcmarketbuilder.user_service.Exception.UserNotFoundException;
 import com.pcmarketbuilder.user_service.Model.Role;
 import com.pcmarketbuilder.user_service.Model.User;
@@ -28,12 +29,50 @@ public class UserService {
     }
 
     /**
+     * Actualiza el perfil editable por el usuario (PUT /users/me): bio,
+     * avatar_url, address, full_name. NO toca email, username, azure_oid ni
+     * role_id (esos se resuelven vía /sync o administración, ver doc §3).
+     *
+     * Solo aplica los campos no-nulos; un campo ausente no se sobreescribe.
+     */
+    @Transactional
+    public User updateProfile(AuthContext auth, UpdateProfileRequest request) {
+        User user = getMe(auth);
+
+        if (request.bio() != null) {
+            user.setBio(request.bio());
+        }
+        if (request.avatarUrl() != null) {
+            user.setAvatarUrl(request.avatarUrl());
+        }
+        if (request.address() != null) {
+            user.setAddress(request.address());
+        }
+        if (request.fullName() != null) {
+            user.setFullName(request.fullName());
+        }
+
+        return userRepository.save(user);
+    }
+
+    /**
      * Perfil público por username (no requiere autenticación).
      */
     @Transactional(readOnly = true)
     public User getPublicProfile(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> UserNotFoundException.byUsername(username));
+    }
+
+    /**
+     * Perfil público por azure_oid (no requiere autenticación). Usado por otros
+     * microservicios/BFFs para resolver un sellerId/buyerId (que guardan el
+     * azure_oid) a un perfil mostrable.
+     */
+    @Transactional(readOnly = true)
+    public User getPublicProfileByAzureOid(String azureOid) {
+        return userRepository.findByAzureOid(azureOid)
+                .orElseThrow(() -> UserNotFoundException.byAzureOid(azureOid));
     }
 
     /**
@@ -116,15 +155,16 @@ public class UserService {
     }
 
     /**
-     * Resuelve la Role por role_name. Si el valor del claim no existe en la
-     * tabla roles, la crea (provisioning JIT del catálogo de roles); esto
-     * mantiene alineada la tabla Role con los App Roles de Entra.
+     * Resuelve la Role por role_name SOLO leyendo la tabla. Si el valor del
+     * claim no existe entre los roles conocidos (sembrados por RoleSeeder),
+     * devuelve null: el rol se ignora y se usa el default. NUNCA se crea un
+     * rol nuevo a partir del input del cliente (evita auto-inventar permisos
+     * mientras no exista el Gateway real validando el JWT).
      */
     private Role resolveRole(String roleName) {
         if (roleName == null || roleName.isBlank()) {
             return null;
         }
-        return roleRepository.findByRoleName(roleName)
-                .orElseGet(() -> roleRepository.save(Role.builder().roleName(roleName).build()));
+        return roleRepository.findByRoleName(roleName).orElse(null);
     }
 }

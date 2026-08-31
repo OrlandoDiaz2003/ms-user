@@ -36,3 +36,4 @@ build/
 .docs/
 .env
 test-users.sh
+TODO.md

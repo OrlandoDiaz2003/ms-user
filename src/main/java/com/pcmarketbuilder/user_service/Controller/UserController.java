@@ -4,13 +4,16 @@ import com.pcmarketbuilder.user_service.Auth.AuthContext;
 import com.pcmarketbuilder.user_service.Dto.PrivateUserResponse;
 import com.pcmarketbuilder.user_service.Dto.PublicUserResponse;
 import com.pcmarketbuilder.user_service.Dto.SyncRequest;
+import com.pcmarketbuilder.user_service.Dto.UpdateProfileRequest;
 import com.pcmarketbuilder.user_service.Service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -52,6 +55,19 @@ public class UserController {
     }
 
     /**
+     * Actualiza el perfil editable del usuario autenticado (bio, avatarUrl,
+     * address, fullName). No permite tocar email/username/azure_oid/role_id.
+     */
+    @PutMapping("/me")
+    public ResponseEntity<PrivateUserResponse> updateMe(
+            @RequestHeader(value = AuthContext.USER_ID_HEADER, required = false) String userId,
+            @RequestHeader(value = AuthContext.ROLE_HEADER, required = false) String role,
+            @Valid @RequestBody UpdateProfileRequest request) {
+        return ResponseEntity.ok(
+                PrivateUserResponse.fromEntity(userService.updateProfile(new AuthContext(userId, role), request)));
+    }
+
+    /**
      * Perfil privado completo del usuario autenticado. La identidad sale del
      * header X-User-Id (claim "oid"), nunca de la URL.
      */
@@ -69,5 +85,15 @@ public class UserController {
     @GetMapping("/{username}")
     public ResponseEntity<PublicUserResponse> getPublicProfile(@PathVariable("username") String username) {
         return ResponseEntity.ok(PublicUserResponse.fromEntity(userService.getPublicProfile(username)));
+    }
+
+    /**
+     * Perfil público por azure_oid (mismo shape que GET /{username}). No
+     * requiere autenticación. Lo usan otros microservicios/BFFs para resolver
+     * un sellerId/buyerId (que almacenan el azure_oid) a un perfil mostrable.
+     */
+    @GetMapping("/by-id/{azureOid}")
+    public ResponseEntity<PublicUserResponse> getPublicProfileByAzureOid(@PathVariable("azureOid") String azureOid) {
+        return ResponseEntity.ok(PublicUserResponse.fromEntity(userService.getPublicProfileByAzureOid(azureOid)));
     }
 }

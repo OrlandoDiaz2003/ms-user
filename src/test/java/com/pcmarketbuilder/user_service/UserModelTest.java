@@ -21,14 +21,15 @@ class UserModelTest {
 
     @Test
     void createsRoleAndUserWithRelationship() {
-        Role buyerSeller = roleRepository.save(Role.builder().roleName("BUYER_SELLER").build());
+        // Usa un role_name que RoleSeeder ya no siembra para evitar colisión UNIQUE.
+        Role role = roleRepository.save(Role.builder().roleName("TEST_ROLE").build());
 
         User user = userRepository.save(User.builder()
                 .azureOid("2150f48f-e611-439c-83cf-37eed0c5f232")
                 .username("pansito")
                 .email("pansito@pcmarketbuilder.onmicrosoft.com")
                 .fullName("pansito")
-                .role(buyerSeller)
+                .role(role)
                 .build());
 
         User loaded = userRepository.findById(user.getUserId()).orElseThrow();
@@ -37,7 +38,7 @@ class UserModelTest {
         assertThat(loaded.getAzureOid()).isEqualTo("2150f48f-e611-439c-83cf-37eed0c5f232");
         assertThat(loaded.getUsername()).isEqualTo("pansito");
         assertThat(loaded.getEmail()).isEqualTo("pansito@pcmarketbuilder.onmicrosoft.com");
-        assertThat(loaded.getRole().getRoleName()).isEqualTo("BUYER_SELLER");
+        assertThat(loaded.getRole().getRoleName()).isEqualTo("TEST_ROLE");
         assertThat(loaded.getCreatedAt()).isNotNull();
     }
 }

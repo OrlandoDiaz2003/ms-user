@@ -19,6 +19,7 @@ public record AuthContext(String userId, String role) {
     public static final String NAME_HEADER = "X-User-Name";
 
     public static final String ROLE_BUYER_SELLER = "BUYER_SELLER";
+    public static final String ROLE_TECHNICAL_AGENT = "TECHNICAL_AGENT";
     public static final String ROLE_WORKSHOP_ADMIN = "WORKSHOP_ADMIN";
 
     public AuthContext {
