@@ -22,7 +22,7 @@ class UserModelTest {
     @Test
     void createsRoleAndUserWithRelationship() {
         // Usa un role_name que RoleSeeder ya no siembra para evitar colisión UNIQUE.
-        Role role = roleRepository.save(Role.builder().roleName("TEST_ROLE").build());
+        Role role = roleRepository.save(Role.builder().roleName("").build());
 
         User user = userRepository.save(User.builder()
                 .azureOid("2150f48f-e611-439c-83cf-37eed0c5f232")
