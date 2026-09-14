@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "vistas-test",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "http-server", "../bff-pcmarketbuilder/vistas-test", "-p", "5500", "-c-1"],
+      "port": 5500
+    }
+  ]
+}

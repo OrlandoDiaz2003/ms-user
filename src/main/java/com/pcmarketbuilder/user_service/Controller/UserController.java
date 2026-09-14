@@ -1,8 +1,10 @@
 package com.pcmarketbuilder.user_service.Controller;
 
 import com.pcmarketbuilder.user_service.Auth.AuthContext;
+import com.pcmarketbuilder.user_service.Client.PublicationClient;
 import com.pcmarketbuilder.user_service.Dto.PrivateUserResponse;
 import com.pcmarketbuilder.user_service.Dto.PublicUserResponse;
+import com.pcmarketbuilder.user_service.Dto.SellerPublications;
 import com.pcmarketbuilder.user_service.Dto.SyncRequest;
 import com.pcmarketbuilder.user_service.Dto.UpdateProfileRequest;
 import com.pcmarketbuilder.user_service.Service.UserService;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     private final UserService userService;
+    private final PublicationClient publicationClient;
 
     /**
      * Provisioning JIT: se llama una vez por sesión, justo después de que el
@@ -51,7 +54,11 @@ public class UserController {
 
         AuthContext auth = new AuthContext(userId, role);
         var synced = userService.sync(auth.userId(), auth.role(), email, fullName);
-        return ResponseEntity.status(HttpStatus.OK).body(PrivateUserResponse.fromEntity(synced));
+        // No se consulta publication-service acá: el frontend descarta este body
+        // (usa /sync solo para provisionar y dispara un GET /me aparte para leer
+        // el perfil), y /sync se llama una vez por sesión, en cada login.
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(PrivateUserResponse.fromEntity(synced, SellerPublications.empty()));
     }
 
     /**
@@ -63,8 +70,10 @@ public class UserController {
             @RequestHeader(value = AuthContext.USER_ID_HEADER, required = false) String userId,
             @RequestHeader(value = AuthContext.ROLE_HEADER, required = false) String role,
             @Valid @RequestBody UpdateProfileRequest request) {
-        return ResponseEntity.ok(
-                PrivateUserResponse.fromEntity(userService.updateProfile(new AuthContext(userId, role), request)));
+        AuthContext auth = new AuthContext(userId, role);
+        var updated = userService.updateProfile(auth, request);
+        var publications = publicationClient.findBySeller(auth.userId());
+        return ResponseEntity.ok(PrivateUserResponse.fromEntity(updated, publications));
     }
 
     /**
@@ -75,8 +84,10 @@ public class UserController {
     public ResponseEntity<PrivateUserResponse> getMe(
             @RequestHeader(value = AuthContext.USER_ID_HEADER, required = false) String userId,
             @RequestHeader(value = AuthContext.ROLE_HEADER, required = false) String role) {
-        return ResponseEntity.ok(
-                PrivateUserResponse.fromEntity(userService.getMe(new AuthContext(userId, role))));
+        AuthContext auth = new AuthContext(userId, role);
+        var user = userService.getMe(auth);
+        var publications = publicationClient.findBySeller(auth.userId());
+        return ResponseEntity.ok(PrivateUserResponse.fromEntity(user, publications));
     }
 
     /**

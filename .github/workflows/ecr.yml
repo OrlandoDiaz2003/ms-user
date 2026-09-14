@@ -1,0 +1,52 @@
+name: Publicar imagen docker en aws
+
+on:
+  push:
+    branches:
+      - aws
+
+jobs:
+  build-and-push-main:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar codigo del repo
+        uses: actions/checkout@v4
+
+      
+      - name: Configurar JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      
+      - name: Compilar y empaquetar con Maven
+        run: |
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
+
+      - name: Configurar credenciales de aws
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Iniciar sesion en aws ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Crear repositorio ECR si no existe
+        run: |
+          aws ecr describe-repositories --repository-names user --region ${{ secrets.AWS_REGION }} || \
+          aws ecr create-repository --repository-name user --region ${{ secrets.AWS_REGION }}
+
+      - name: Construir y publicar en aws
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/user:latest
