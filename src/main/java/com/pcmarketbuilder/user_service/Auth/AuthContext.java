@@ -37,6 +37,7 @@ public record AuthContext(String userId, String role) {
         }
     }
 
+    
     public boolean hasRole(String expectedRole) {
         return role != null && role.equals(expectedRole);
     }

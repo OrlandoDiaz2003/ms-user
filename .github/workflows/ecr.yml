@@ -41,12 +41,12 @@ jobs:
 
       - name: Crear repositorio ECR si no existe
         run: |
-          aws ecr describe-repositories --repository-names user --region ${{ secrets.AWS_REGION }} || \
-          aws ecr create-repository --repository-name user --region ${{ secrets.AWS_REGION }}
+          aws ecr describe-repositories --repository-names userpcbuilder --region ${{ secrets.AWS_REGION }} || \
+          aws ecr create-repository --repository-name userpcbuilder --region ${{ secrets.AWS_REGION }}
 
       - name: Construir y publicar en aws
         uses: docker/build-push-action@v7
         with:
           context: .
           push: true
-          tags: ${{ steps.login-ecr.outputs.registry }}/user:latest
+          tags: ${{ steps.login-ecr.outputs.registry }}/userpcbuilder:latest
