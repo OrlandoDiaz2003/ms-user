@@ -1,0 +1,11 @@
+target/
+.git/
+.gitignore
+.env
+.env.example
+mvnw
+mvnw.cmd
+.docs/credenciales_db.txt
+.docs/test_user_credentials.txt
+.docs/#test_user_credentials.txt#
+*.md
